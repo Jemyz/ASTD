@@ -213,8 +213,6 @@ class AraTweet:
         num_reviews = len(rating)
         review_ids = np.arange(0, num_reviews)
 
-
-
         review_ids_pos=review_ids[rating=='POS']
         review_ids_neg=review_ids[rating=='NEG']
         review_ids_neutral=review_ids[rating=='NEUTRAL']
@@ -342,7 +340,6 @@ class AraTweet:
         (body,rating) = self.read_clean_reviews()
         rating = np.array(rating)
         body = pd.Series(body)
-
         train_file = (self.REVIEWS_PATH + klass + "class-" +
             balanced + "-train.txt")
         test_file = (self.REVIEWS_PATH + klass + "class-" +
@@ -370,4 +367,5 @@ AraSent=AraTweet()
 (body,rating)=AraSent.read_clean_reviews()
 AraSent.split_train_validation_test(rating,0.2, 0.2,"unbalanced")
 
+# print AraSent.split_train_validation_test(rating,0.2, 0.2,"unbalanced")
 

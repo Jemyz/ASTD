@@ -6,12 +6,13 @@ Created on Sun Apr 14 19:05:12 2013
 
 """
 
+from classes.DeltaTfidf import *
 import cPickle as pickle
 import numpy as np
 from AraTweet import *
 import os
 from qalsadi import analex
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer,HashingVectorizer
 from sklearn.naive_bayes import MultinomialNB, BernoulliNB
 from sklearn.linear_model import Perceptron
 from sklearn.svm import LinearSVC
@@ -70,15 +71,23 @@ Features_Generators = [
     dict(name="count_ng3",
          feat_generator=CountVectorizer(tokenizer=tokenizer, ngram_range=(1, 3))),
     dict(name="tfidf_ng1",
-         feat_generator=TfidfVectorizer(tokenizer=tokenizer, ngram_range=(1, 1))),
+         feat_generator=TfidfVectorizer(tokenizer=tokenizer, ngram_range=(1, 1))),  #term frequency * inverse document frequency
     dict(name="tfidf_ng2",
          feat_generator=TfidfVectorizer(tokenizer=tokenizer, ngram_range=(1, 2))),
     dict(name="tfidf_ng3",
          feat_generator=TfidfVectorizer(tokenizer=tokenizer, ngram_range=(1, 3))),
-]
+    dict(name="hash_ng1",
+             feat_generator=HashingVectorizer(tokenizer=tokenizer,ngram_range=(1, 1))),
+    dict(name="hash_ng2",
+             feat_generator=HashingVectorizer(tokenizer=tokenizer, ngram_range=(1, 2))),
+    dict(name="hash_ng3",
+             feat_generator=HashingVectorizer(tokenizer=tokenizer, ngram_range=(1, 3))),
+
+    ]
 
 # classifiers
-classifiers = [   dict(name="Logistic Regression", parameter_tunning=False,
+classifiers = [
+    dict(name="Logistic Regression", parameter_tunning=False,
          tune_clf=GridSearchCV(LogisticRegression(), [{'penalty': ['l2'], 'C': [1, 10, 100]}], cv=3),
          clf=LogisticRegression(penalty='l2', C=1)),
     dict(name="Passive Aggresive", parameter_tunning=False, clf=PassiveAggressiveClassifier(n_iter=100)),

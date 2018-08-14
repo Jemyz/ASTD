@@ -45,40 +45,49 @@ for data in datas:
         X_test = feat_generator['feat_generator'].transform(d_test)
         ####################################################################################
 
-
         for clf in classifiers:
-                    if clf['parameter_tunning']:
-                        # region parameter tunning
-                        print("tuning: ", clf["name"])
-                        clf['tune_clf'].fit(X_train, y_train)
-                        print (data['name'])
-                        print (feat_generator['name'])
-                        print (clf['tune_clf'].best_estimator_)
-                        # endregion
-                    else:
-                        ####################################Training And Predict################################
-                        pred = Train_And_Predict(X_train, y_train, X_test, clf['clf'], clf["name"])
+                if clf["name"] == 'mnb' and (feat_generator['name'].startswith('hash_ng')):
+                    print "here"
+                    continue
+                if clf['parameter_tunning']:
+                    # region parameter tunning
+                    print("tuning: ", clf["name"])
+                    clf['tune_clf'].fit(X_train, y_train)
+                    print (data['name'])
+                    print (feat_generator['name'])
+                    print (clf['tune_clf'].best_estimator_)
+                    # endregion
+                else:
+                    ####################################Training And Predict################################
+                    pred = Train_And_Predict(X_train, y_train, X_test, clf['clf'], clf["name"])
 
-                        (acc, tacc, support, f1) = Evaluate_Result(pred, y_test)
+                    (acc, tacc, support, f1) = Evaluate_Result(pred, y_test)
 
-                        score = dict(data=data['name'],
-                                         feat_generator=feat_generator['name'],
-                                         clf=clf['name'],
-                                         # feat_ext=feat_ext['name'],
-                                         f1=f1,
-                                         acc=acc,
-                                         tacc=tacc)
+                    score = dict(data=data['name'],
+                                     feat_generator=feat_generator['name'],
+                                     clf=clf['name'],
+                                     # feat_ext=feat_ext['name'],
+                                     f1=f1,
+                                     acc=acc,
+                                     tacc=tacc)
 
-                        scores.append(score)
+                    scores.append(score)
 ####################################Testing##############################################
+value = 0.0
 print(60 * "=")
 for s in scores:
     print("")
     for k, v in s.iteritems():
+        if(k == "acc"):
+            if(v > value):
+                value = v
+                temp = dict(s)
         print(k, v)
 
 
+print
+print
 
 
-
-
+for k, v in temp.iteritems():
+    print(k, v)
