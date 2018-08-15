@@ -19,35 +19,75 @@ from scipy.sparse import hstack
 gr = AraTweet()
 scores = list()
 
+
+
+# from sklearn_deltatfidf import DeltaTfidfVectorizer
+#
+# v = DeltaTfidfVectorizer()
+# data = [u'word1 word2', u'word2', u'word2 word3', u'word4']
+# labels = [u'1', u'-1', u'-1', u'1']
+# v.fit_transform(data, labels)
+# exit()
+
 for data in datas:
     ###################################load the data####################################
     print(60 * "-")
     print("Loading data:", data['name'])
 
     if (LoadValidation):
-        (d_train, y_train, d_test, y_test, d_valid, y_valid) = gr.get_train_test_validation(**data['params'])
+        (d_train_ALL, y_train_ALL, d_test_ALL, y_test_ALL, d_valid_ALL, y_valid_ALL) = gr.get_train_test_validation(**data['params'])
         if (Evaluate_On_TestSet):
-            d_train = np.concatenate((d_train, d_valid))
-            y_train = np.concatenate((y_train, y_valid))
+            d_train_ALL = np.concatenate((d_train_ALL, d_valid_ALL))
+            y_train_ALL = np.concatenate((y_train_ALL, y_valid_ALL))
         else:
-            d_test = d_valid
-            y_test = y_valid
+            d_test_ALL = d_valid_ALL
+            y_test_ALL = y_valid_ALL
     else:
-        (d_train, y_train, d_test, y_test) = gr.get_train_test(**data['params'])
+        (d_train_ALL, y_train_ALL, d_test_ALL, y_test_ALL) = gr.get_train_test(**data['params'])
 
+    ##### for delta-tfidf
+    indices_train = [i for i, x in enumerate(y_train_ALL) if x == "POS" or x == "NEG"]
+    indices_test = [i for i, x in enumerate(y_test_ALL) if x == "POS" or x == "NEG"]
+
+    # indices_neg = [i for i, x in enumerate(y_train) if x == "NEG"]
+    x_train_PN = (d_train_ALL[indices_train])
+    y_train_PN = (y_train_ALL[indices_train])
+    x_test_PN = (d_test_ALL[indices_test])
+    y_test_PN = (y_test_ALL[indices_test])
+
+    y_train_PN[y_train_PN == 'POS'] = int(1)
+    y_train_PN[y_train_PN == 'NEG'] = int(-1)
+    y_train_PN = map(int, y_train_PN)
+
+    y_test_PN[y_test_PN == 'POS'] = int(1)
+    y_test_PN[y_test_PN == 'NEG'] = int(-1)
+    y_test_PN = np.array(map(int, y_test_PN))
+    ################################################
 
     ####################################################################################
 
     for feat_generator in Features_Generators:
         ####################################Features Generation#############################
         print("Features Generation:", feat_generator['name'])
-        X_train = feat_generator['feat_generator'].fit_transform(d_train)
-        X_test = feat_generator['feat_generator'].transform(d_test)
+        if (feat_generator['name'].startswith('delta-tfidf')):
+            x_train = x_train_PN
+            y_train = y_train_PN
+            x_test = x_test_PN
+            y_test = y_test_PN
+            X_train = feat_generator['feat_generator'].fit_transform(x_train, y_train)
+            X_test = feat_generator['feat_generator'].transform(x_test.values.astype('U'))
+        else:
+            x_train = d_train_ALL
+            y_train = y_train_ALL
+            x_test = d_test_ALL
+            y_test = y_test_ALL
+            X_train = feat_generator['feat_generator'].fit_transform(x_train)
+            X_test = feat_generator['feat_generator'].transform(x_test)
+
         ####################################################################################
 
         for clf in classifiers:
-                if clf["name"] == 'mnb' and (feat_generator['name'].startswith('hash_ng')):
-                    print "here"
+                if clf["name"] == 'mnb' and (feat_generator['name'].startswith('hash_ng') or feat_generator['name'].startswith('delta-tfidf')):
                     continue
                 if clf['parameter_tunning']:
                     # region parameter tunning
@@ -73,21 +113,35 @@ for data in datas:
 
                     scores.append(score)
 ####################################Testing##############################################
-value = 0.0
+value_unbalanced = 0.0
+value_balanced = 0.0
+
 print(60 * "=")
 for s in scores:
-    print("")
+    print
     for k, v in s.iteritems():
         if(k == "acc"):
-            if(v > value):
-                value = v
-                temp = dict(s)
+            if(s["data"] == "4-unbalanced"):
+                if(v > value_unbalanced):
+                    value_unbalanced = v
+                    temp_unbalanced = dict(s)
+            else:
+                if (v > value_balanced):
+                    value_balanced = v
+                    temp_balanced = dict(s)
         print(k, v)
 
 
 print
 print
+print
+print
 
 
-for k, v in temp.iteritems():
+for k, v in temp_unbalanced.iteritems():
+    print(k, v)
+
+print
+
+for k, v in temp_balanced.iteritems():
     print(k, v)

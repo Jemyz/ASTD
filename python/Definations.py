@@ -6,7 +6,8 @@ Created on Sun Apr 14 19:05:12 2013
 
 """
 
-from classes.DeltaTfidf import *
+# from classes.DeltaTfidf import *
+from sklearn_deltatfidf import DeltaTfidfVectorizer
 import cPickle as pickle
 import numpy as np
 from AraTweet import *
@@ -82,6 +83,12 @@ Features_Generators = [
              feat_generator=HashingVectorizer(tokenizer=tokenizer, ngram_range=(1, 2))),
     dict(name="hash_ng3",
              feat_generator=HashingVectorizer(tokenizer=tokenizer, ngram_range=(1, 3))),
+    dict(name="delta-tfidf1",
+                 feat_generator=DeltaTfidfVectorizer(tokenizer=tokenizer), ngram_range=(1, 1)),
+    dict(name="delta-tfidf2",
+                 feat_generator=DeltaTfidfVectorizer(tokenizer=tokenizer), ngram_range=(1, 2)),
+    dict(name="delta-tfidf3",
+             feat_generator=DeltaTfidfVectorizer(tokenizer=tokenizer), ngram_range=(1, 3)),
 
     ]
 
