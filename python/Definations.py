@@ -7,6 +7,7 @@ Created on Sun Apr 14 19:05:12 2013
 """
 
 # from classes.DeltaTfidf import *
+from sklearn.pipeline import FeatureUnion
 from sklearn_deltatfidf import DeltaTfidfVectorizer
 import cPickle as pickle
 import numpy as np
@@ -46,6 +47,16 @@ from sklearn import cross_validation
 from sklearn.manifold import Isomap
 from sklearn.manifold import SpectralEmbedding
 from sklearn.decomposition import TruncatedSVD
+import nltk
+nltk.download('stopwords')
+from nltk.corpus import stopwords
+stopwords_list = stopwords.words('arabic')
+
+
+
+
+# print(stopwords_list[20])
+# exit()
 
 LoadValidation = True  # Load The validation set
 Evaluate_On_TestSet = True  # Evaluate either on evaluation or on test set if LoadValidation is True
@@ -55,8 +66,8 @@ CrossValidation = False
 UseLexicon = False
 # data sets
 datas = [
-    dict(name="4-balanced", params=dict(klass="4", balanced="balanced")),
     dict(name="4-unbalanced", params=dict(klass="4", balanced="unbalanced")),
+    dict(name="4-balanced", params=dict(klass="4", balanced="balanced")),
 ]
 
 # tokenizer
@@ -66,11 +77,11 @@ tokenizer = an.text_tokenize
 # features
 Features_Generators = [
     dict(name="count_ng1",
-         feat_generator=CountVectorizer(tokenizer=tokenizer, ngram_range=(1, 1))),
+         feat_generator=CountVectorizer(tokenizer=tokenizer,stop_words=stopwords_list, ngram_range=(1, 1))),
     dict(name="count_ng2",
-         feat_generator=CountVectorizer(tokenizer=tokenizer, ngram_range=(1, 2))),
+         feat_generator=CountVectorizer(tokenizer=tokenizer,stop_words=stopwords_list, ngram_range=(1, 2))),
     dict(name="count_ng3",
-         feat_generator=CountVectorizer(tokenizer=tokenizer, ngram_range=(1, 3))),
+         feat_generator=CountVectorizer(tokenizer=tokenizer,stop_words=stopwords_list, ngram_range=(1, 3))),
     dict(name="tfidf_ng1",
          feat_generator=TfidfVectorizer(tokenizer=tokenizer, ngram_range=(1, 1))),  #term frequency * inverse document frequency
     dict(name="tfidf_ng2",
@@ -78,29 +89,43 @@ Features_Generators = [
     dict(name="tfidf_ng3",
          feat_generator=TfidfVectorizer(tokenizer=tokenizer, ngram_range=(1, 3))),
     dict(name="hash_ng1",
-             feat_generator=HashingVectorizer(tokenizer=tokenizer,ngram_range=(1, 1))),
+             feat_generator=HashingVectorizer(tokenizer=tokenizer,stop_words=stopwords_list,ngram_range=(1, 1))),
     dict(name="hash_ng2",
-             feat_generator=HashingVectorizer(tokenizer=tokenizer, ngram_range=(1, 2))),
+             feat_generator=HashingVectorizer(tokenizer=tokenizer,stop_words=stopwords_list, ngram_range=(1, 2))),
     dict(name="hash_ng3",
-             feat_generator=HashingVectorizer(tokenizer=tokenizer, ngram_range=(1, 3))),
-    dict(name="delta-tfidf1",
+             feat_generator=HashingVectorizer(tokenizer=tokenizer,stop_words=stopwords_list, ngram_range=(1, 3))),
+    dict(name="delta_tfidf1",
                  feat_generator=DeltaTfidfVectorizer(tokenizer=tokenizer), ngram_range=(1, 1)),
-    dict(name="delta-tfidf2",
+    dict(name="delta_tfidf2",
                  feat_generator=DeltaTfidfVectorizer(tokenizer=tokenizer), ngram_range=(1, 2)),
-    dict(name="delta-tfidf3",
+    dict(name="delta_tfidf3",
              feat_generator=DeltaTfidfVectorizer(tokenizer=tokenizer), ngram_range=(1, 3)),
-
     ]
 
+
+#############################
+# feature union
+count = ('count',[item for item in Features_Generators if item['name'] == 'count_ng1'][0]['feat_generator'])
+tfidf = ('tfidf',[item for item in Features_Generators if item['name'] == 'tfidf_ng1'][0]['feat_generator'])
+delta_tfidf = ('delta_tfidf',[item for item in Features_Generators if item['name'] == 'delta_tfidf3'][0]['feat_generator'])
+
+FeatureUnion_trial  = dict(name="tfidf_count",feat_generator=FeatureUnion([count,tfidf]))
+Features_Generators.append(FeatureUnion_trial)
+FeatureUnion_trial  = dict(name="delta_tfidf_count",feat_generator=FeatureUnion([count,delta_tfidf]))
+Features_Generators.append(FeatureUnion_trial)
+FeatureUnion_trial  = dict(name="delta_tfidf_tfidf_count",feat_generator=FeatureUnion([count,tfidf,delta_tfidf]))
+Features_Generators.append(FeatureUnion_trial)
+
+
 # classifiers
+
 classifiers = [
-    dict(name="Logistic Regression", parameter_tunning=False,
+    dict(name="LRegn", parameter_tunning=False,
          tune_clf=GridSearchCV(LogisticRegression(), [{'penalty': ['l2'], 'C': [1, 10, 100]}], cv=3),
          clf=LogisticRegression(penalty='l2', C=1)),
-    dict(name="Passive Aggresive", parameter_tunning=False, clf=PassiveAggressiveClassifier(n_iter=100)),
+    dict(name="PAgg", parameter_tunning=False, clf=PassiveAggressiveClassifier(n_iter=100)),
     dict(name="SVM", parameter_tunning=False, clf=LinearSVC(loss='l2', penalty="l2", dual=False, tol=1e-3)),
-    dict(name="Perceptron", parameter_tunning=False, clf=Perceptron(n_iter=100)),
-    #
+    dict(name="Percep", parameter_tunning=False, clf=Perceptron(n_iter=100)),
     dict(name="bnb", parameter_tunning=False, clf=BernoulliNB(binarize=0.5)),
     dict(name="mnb", parameter_tunning=False, clf=MultinomialNB(alpha=1.0, fit_prior=True, class_prior=None)),
     dict(name="sgd", parameter_tunning=False, clf=SGDClassifier(loss="hinge", penalty="l2")),
@@ -109,7 +134,6 @@ classifiers = [
          clf=KNeighborsClassifier(n_neighbors=5, metric='euclidean')),
 
 ]
-
 
 
 

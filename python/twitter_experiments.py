@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# # -*- coding: utf-8 -*-
 """
 Created on Sun Apr 14 19:05:12 2013
 
@@ -14,20 +14,14 @@ from sklearn.decomposition import TruncatedSVD
 import matplotlib.pyplot as plt
 from sklearn.manifold import isomap
 import numpy as np
-from scipy.sparse import hstack
+
+TYPES = ["Negative","Neutral","Positive"]
+COLORS = ["red","green","blue"]
 
 gr = AraTweet()
 scores = list()
 
 
-
-# from sklearn_deltatfidf import DeltaTfidfVectorizer
-#
-# v = DeltaTfidfVectorizer()
-# data = [u'word1 word2', u'word2', u'word2 word3', u'word4']
-# labels = [u'1', u'-1', u'-1', u'1']
-# v.fit_transform(data, labels)
-# exit()
 
 for data in datas:
     ###################################load the data####################################
@@ -45,49 +39,70 @@ for data in datas:
     else:
         (d_train_ALL, y_train_ALL, d_test_ALL, y_test_ALL) = gr.get_train_test(**data['params'])
 
+    from sklearn.utils import shuffle
+
+
+    d_train_ALL, y_train_ALL = shuffle(d_train_ALL, y_train_ALL)
+    d_test_ALL, y_test_ALL = shuffle(d_test_ALL, y_test_ALL)
+
+
+    neutral_indices = [i for i, x in enumerate(y_test_ALL) if x == 'NEUTRAL' ]
+    postive_indices = [i for i, x in enumerate(y_test_ALL) if x == "POS" ]
+    negtive_indices = [i for i, x in enumerate(y_test_ALL) if x == "NEG" ]
+
+    TOTALS = [len(negtive_indices),len(neutral_indices),len(postive_indices)]
+
+    stop_word_perc(d_train_ALL,y_train_ALL,stopwords_list)
+
     ##### for delta-tfidf
-    indices_train = [i for i, x in enumerate(y_train_ALL) if x == "POS" or x == "NEG"]
-    indices_test = [i for i, x in enumerate(y_test_ALL) if x == "POS" or x == "NEG"]
+    indices_train = [i for i, x in enumerate(y_train_ALL) if x == "POS" or x == "NEG" or x == 'NEUTRAL' ]
+    indices_test = [i for i, x in enumerate(y_test_ALL) if x == "POS" or x == "NEG" or x == 'NEUTRAL' ]
 
     # indices_neg = [i for i, x in enumerate(y_train) if x == "NEG"]
-    x_train_PN = (d_train_ALL[indices_train])
-    y_train_PN = (y_train_ALL[indices_train])
-    x_test_PN = (d_test_ALL[indices_test])
-    y_test_PN = (y_test_ALL[indices_test])
+    x_train_PN = np.array(d_train_ALL[indices_train])
+    y_train_PN = np.array(y_train_ALL[indices_train])
+    x_test_PN = np.array(d_test_ALL[indices_test])
+    y_test_PN = np.array(y_test_ALL[indices_test])
+
+
 
     y_train_PN[y_train_PN == 'POS'] = int(1)
     y_train_PN[y_train_PN == 'NEG'] = int(-1)
+    y_train_PN[y_train_PN == 'NEUTRAL'] = int(0)
     y_train_PN = map(int, y_train_PN)
 
     y_test_PN[y_test_PN == 'POS'] = int(1)
     y_test_PN[y_test_PN == 'NEG'] = int(-1)
+    y_test_PN[y_test_PN == 'NEUTRAL'] = int(0)
     y_test_PN = np.array(map(int, y_test_PN))
     ################################################
 
     ####################################################################################
-
     for feat_generator in Features_Generators:
         ####################################Features Generation#############################
         print("Features Generation:", feat_generator['name'])
-        if (feat_generator['name'].startswith('delta-tfidf')):
-            x_train = x_train_PN
-            y_train = y_train_PN
-            x_test = x_test_PN
-            y_test = y_test_PN
+
+        x_train = d_train_ALL
+        y_train = y_train_PN
+        x_test = d_test_ALL
+        y_test = y_test_PN
+
+
+        if (feat_generator['name'].startswith('delta_tfidf')):
+
             X_train = feat_generator['feat_generator'].fit_transform(x_train, y_train)
-            X_test = feat_generator['feat_generator'].transform(x_test.values.astype('U'))
+            X_test = feat_generator['feat_generator'].transform(x_test.astype('U'))
         else:
-            x_train = d_train_ALL
-            y_train = y_train_ALL
-            x_test = d_test_ALL
-            y_test = y_test_ALL
+
             X_train = feat_generator['feat_generator'].fit_transform(x_train)
             X_test = feat_generator['feat_generator'].transform(x_test)
 
         ####################################################################################
 
+        clfs_names = []
+        classes_accuracies = []
         for clf in classifiers:
-                if clf["name"] == 'mnb' and (feat_generator['name'].startswith('hash_ng') or feat_generator['name'].startswith('delta-tfidf')):
+                if clf["name"] == 'mnb' and (feat_generator['name'].startswith('hash_ng') or feat_generator['name'].startswith('delta_tfidf')):
                     continue
                 if clf['parameter_tunning']:
                     # region parameter tunning
@@ -101,17 +116,21 @@ for data in datas:
                     ####################################Training And Predict################################
                     pred = Train_And_Predict(X_train, y_train, X_test, clf['clf'], clf["name"])
 
-                    (acc, tacc, support, f1) = Evaluate_Result(pred, y_test)
+                    (acc, tacc, support, f1, classes_accuracy) = Evaluate_Result(pred, y_test)
+
+                    clfs_names.append(clf['name'])
+                    classes_accuracies.append(classes_accuracy)
 
                     score = dict(data=data['name'],
                                      feat_generator=feat_generator['name'],
                                      clf=clf['name'],
-                                     # feat_ext=feat_ext['name'],
+                                      # feat_ext=feat_ext['name'],
                                      f1=f1,
                                      acc=acc,
                                      tacc=tacc)
 
                     scores.append(score)
+        groupedbarplot(clfs_names,zip(*classes_accuracies),TYPES,COLORS,data['name'],feat_generator['name'],TOTALS)
 ####################################Testing##############################################
 value_unbalanced = 0.0
 value_balanced = 0.0
@@ -145,3 +164,10 @@ print
 
 for k, v in temp_balanced.iteritems():
     print(k, v)
+
+
+import pandas as pd
+df = pd.DataFrame(scores)  # transpose to look just like the sheet above
+df.to_csv('results_union.csv')
+df.to_excel('file.xls')
+

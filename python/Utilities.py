@@ -53,16 +53,48 @@ def MySelectPercentile(vectorizer,feat_ext, precent, X_train, y_train, X_test):
     X_train_modified = X_train[:, Indeces_Selected]
     X_test_modified = X_test[:, Indeces_Selected]
     return X_train_modified, X_test_modified
-    
+
+def stackedbarplot(x_data, y_data_list, colors, y_data_names="", x_label="", y_label="", title=""):
+    _, ax = plt.subplots()
+    # Draw bars, one category at a time
+    for i in range(0, len(y_data_list)):
+        print i
+        if i == 0:
+            ax.bar(x_data, y_data_list[i], color = colors[i], align = 'center')
+        else:
+            # For each category after the first, the bottom of the
+            # bar will be the top of the last category
+            ax.bar(x_data, y_data_list[i], color = colors[i], bottom = y_data_list[i - 1], align = 'center')
+    ax.set_ylabel(y_label)
+    ax.set_xlabel(x_label)
+    ax.set_title(title)
+    ax.legend(loc = 'upper right')
+    plt.show()
+
 
 def Evaluate_Result(pred, y_test):
     # Weighted average of accuracy and f1
     (acc, tacc, support, f1) = (list(), list(), list(), list())
+
+    total = []
+    true = []
+
+    classes_accuracy = []
+
     for l in np.unique(y_test):
         support.append(np.sum(y_test == l) / float(y_test.size))
+
         tp = float(np.sum(pred[y_test == l] == l))
         fp = float(np.sum(pred[y_test != l] == l))
         fn = float(np.sum(pred[y_test == l] != l))
+        # tn = float(np.sum(pred[y_test != l] != l))
+
+        total.append(int(fn))
+        true.append(int(tp))
+
+        classes_accuracy.append(tp)
+        # classes_accuracy.append(tp/(tp + fn))
+
         #print("tp:", tp, " fp:", fp, " fn:", fn,"class:",l,"precision:",tp/(tp+fp),"recall:",tp/(tp+fn))
         if tp > 0:
             prec = tp / (tp + fp)
@@ -80,11 +112,12 @@ def Evaluate_Result(pred, y_test):
     acc = np.average(acc, weights=support)
     # weighted F1 measure
     f1 = np.average(f1, weights=support)
-            
+
     print("f1 = %0.3f" % f1)
     print("wacc = %0.3f" % acc)
-    print("tacc = %0.3f" % tacc)  
-    return (acc, tacc, support, f1)
+    print("tacc = %0.3f" % tacc)
+    # stackedbarplot(["negative", "neutral", "positive"], [true, total], ["red", "blue"])
+    return (acc, tacc, support, f1, classes_accuracy)
 
 def Train_And_Predict(X_train, y_train, X_test, classifier, classifier_name):
     
@@ -137,7 +170,6 @@ def plot(accuracies, precentages, legend_names, feat_extract):
               fancybox=True, shadow=True, ncol=3)
     
     plt.draw()
-    
 
 
 def unique_rows(a):
@@ -165,3 +197,88 @@ def ReadLexicon1():
         neg[i]=re.sub('\s$','',neg[i])        
     lexicon=pos+neg
     return lexicon
+
+def stop_word_perc(d_train_ALL,y_train_ALL,stopwords_list):
+    neutral_indices = [i for i, x in enumerate(y_train_ALL) if x == 'NEUTRAL']
+    postive_indices = [i for i, x in enumerate(y_train_ALL) if x == "POS"]
+    negtive_indices = [i for i, x in enumerate(y_train_ALL) if x == "NEG"]
+
+    neutral_stop_words = 0
+    postive_stop_words = 0
+    negtive_stop_words = 0
+
+    neutral_total_words = 0
+    postive_total_words = 0
+    negtive_total_words = 0
+
+    for index in neutral_indices:
+
+        for word in d_train_ALL[index].split(' '):
+            neutral_total_words = neutral_total_words + 1
+            matching = [s for s in stopwords_list if s == word]
+            # if(len(matching)> 0):
+            #     print matching[0]
+            #     print d_train_ALL[index]
+            neutral_stop_words = neutral_stop_words + len(matching)
+
+    print "neutral stop words " + str(neutral_stop_words) + "  neutral total words " + str(
+        neutral_total_words) + "   " + str(neutral_stop_words * 1.0 / neutral_total_words)
+
+    for index in postive_indices:
+
+        for word in d_train_ALL[index].split(' '):
+            postive_total_words = postive_total_words + 1
+            matching = [s for s in stopwords_list if s == word]
+            # if (len(matching) > 0):
+            #     print matching[0]
+            #     print d_train_ALL[index]
+            postive_stop_words = postive_stop_words + len(matching)
+
+    print "postive stop words " + str(postive_stop_words) + "  postive total words " + str(
+        postive_total_words) + "   " + str(postive_stop_words * 1.0 / postive_total_words)
+
+    for index in negtive_indices:
+
+        for word in d_train_ALL[index].split(' '):
+            negtive_total_words = negtive_total_words + 1
+            matching = [s for s in stopwords_list if s == word]
+            # if (len(matching) > 0):
+            #     print matching[0]
+            #     print d_train_ALL[index]
+            negtive_stop_words = negtive_stop_words + len(matching)
+
+    print "negtive stop words " + str(negtive_stop_words) + "  negtive total words " + str(
+        negtive_total_words) + "   " + str(negtive_stop_words * 1.0 / negtive_total_words)
+
+
+def groupedbarplot(labels,bars,types,colors,title,suptitle,total,barWidth = 0.5):
+    # libraries
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    # Set position of bar on X axis
+    x_postions =  []
+    r = np.arange(len(bars[0]))*2
+    for i in range(len(bars)):
+        x_postions.append([x + barWidth*i for x in r])
+
+
+    # Make the plot
+    for i in range(len(bars)):
+        if(i < 3):
+            plt.bar(x_postions[i], bars[i], color=colors[i], width=barWidth, edgecolor='white', label=types[i]+": "+str(total[i]))
+        else:
+            plt.bar(x_postions[i], bars[i], color=colors[i%3], width=barWidth, edgecolor='white')
+
+    # Add xticks on the middle of the group bars
+
+    plt.xlabel('group', fontweight='bold')
+    plt.xticks(x_postions[len(x_postions)/2],labels)
+
+    plt.title(title)
+    plt.suptitle(suptitle)
+
+    # Create legend & Show graphic
+    plt.legend()
+
+    plt.show()

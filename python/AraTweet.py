@@ -3,6 +3,12 @@
 Created on Sun Mar 10 16:27:03 2015
 """
 
+import nltk
+nltk.download('stopwords')
+from nltk.corpus import stopwords
+stopwords_list = stopwords.words('arabic')
+
+
 import codecs
 
 import numpy as np
@@ -177,9 +183,13 @@ class AraTweet:
 
         reviews = codecs.open(file_name, 'r', 'utf-8').readlines()
 
+        regex = u'[^\w\t]|_|[0-9]'
+        reviews = [re.sub(regex, ' ', r, flags=re.UNICODE) for r in reviews]
+
         # remove comment lines and newlines
         reviews = [re.sub(("^\s+"), "", r) for r in reviews]
         reviews = [re.sub(("\s+$"), "", r) for r in reviews]
+
         # parse
         rating = list()
         body = list()
@@ -187,11 +197,13 @@ class AraTweet:
         for review in reviews:
             # split by <tab>
             parts = review.split(u"\t")
-
+            sen = parts[0]
+            # sen = (" "+sen+" ")
+            # for s in stopwords_list:
+            #     sen = sen.replace((" " + s + " ")," ")
             # body is first part and rating is last part
-            body.append(parts[0])
+            body.append(sen)
             rating.append(parts[1])
-
         return (body, rating)
 
     def read_clean_reviews(self):
@@ -204,6 +216,81 @@ class AraTweet:
 
     # Splits the data-set into a training/validation/test sets in the setting of using 4
     # classes and balanced or unbalanced settings
+    def split_train_validation_test_no_obj(self, rating, percent_test, percent_valid,
+                                balanced="unbalanced"):
+        np.random.seed(1234)
+
+        rating = np.array(rating)
+        # length
+        num_reviews = len(rating)
+        review_ids = np.arange(0, num_reviews)
+
+        review_ids_pos=review_ids[rating=='POS']
+        review_ids_neg=review_ids[rating=='NEG']
+        review_ids_neutral=review_ids[rating=='NEUTRAL']
+
+        np.random.shuffle(review_ids_pos)
+        np.random.shuffle(review_ids_neg)
+        np.random.shuffle(review_ids_neutral)
+
+        if balanced == "unbalanced":
+
+            ntest_pos = int(np.floor(len(review_ids_pos)*percent_test))
+            ntest_neg = int(np.floor(len(review_ids_neg)*percent_test))
+            ntest_neutral = int(np.floor(len(review_ids_neutral)*percent_test))
+
+            nvalid_pos = int(np.floor(len(review_ids_pos) * percent_valid))
+            nvalid_neg = int(np.floor(len(review_ids_neg) * percent_valid))
+            nvalid_neutral = int(np.floor(len(review_ids_neutral) * percent_valid))
+            # print(ntest_pos)
+            # print(review_ids_neg[0:2])
+            # print(review_ids_pos[0:ntest_pos])
+            # exit()
+            # test_ids = np.concatenate([review_ids_pos[0:ntest_pos], review_ids_neg[0:ntest_neg]])
+            # exit()
+            test_ids = np.concatenate([review_ids_pos[0:ntest_pos] \
+                       ,review_ids_neg[0:ntest_neg]\
+                       ,review_ids_neutral[0:ntest_neutral]])
+
+            validation_ids = np.concatenate([review_ids_pos[ntest_pos:ntest_pos+nvalid_pos] \
+                       ,review_ids_neg[ntest_neg:ntest_neg+nvalid_neg]\
+                       ,review_ids_neutral[ntest_neutral:ntest_neutral+nvalid_neutral]])
+
+            train_ids = np.concatenate([review_ids_pos[ntest_pos+nvalid_pos:] \
+                       ,review_ids_neg[ntest_neg+nvalid_neg:]\
+                       ,review_ids_neutral[ntest_neutral+nvalid_neutral:]])
+
+        elif balanced == "balanced":
+            sizes=l=[len(review_ids_pos),len(review_ids_neg),len(review_ids_neutral)]
+            min_size = min(sizes)
+
+            ntest = int(np.floor(min_size * percent_test))
+            nvalid = int(np.floor(min_size * percent_valid))
+
+            test_ids = np.concatenate([review_ids_pos[0:ntest] \
+                       ,review_ids_neg[0:ntest]\
+                       ,review_ids_neutral[0:ntest]])
+
+            validation_ids = np.concatenate([review_ids_pos[ntest:ntest+nvalid] \
+                       ,review_ids_neg[ntest:ntest+nvalid]\
+                       ,review_ids_neutral[ntest:ntest+nvalid]])
+
+            train_ids = np.concatenate([review_ids_pos[ntest+nvalid:min_size] \
+                       ,review_ids_neg[ntest+nvalid:min_size]\
+                       ,review_ids_neutral[ntest+nvalid:min_size]])
+
+
+
+        train_file = self.REVIEWS_PATH + "4class-" + balanced + "-train.txt"
+        test_file = self.REVIEWS_PATH + "4class-" + balanced + "-test.txt"
+        validation_file = self.REVIEWS_PATH + "4class-" + balanced + "-validation.txt"
+
+        open(train_file, 'w').write('\n'.join(map(str, train_ids)))
+        open(test_file, 'w').write('\n'.join(map(str, test_ids)))
+        open(validation_file, 'w').write('\n'.join(map(str, validation_ids)))
+
+        return (train_ids, test_ids)
+
     def split_train_validation_test(self, rating, percent_test, percent_valid,
                                 balanced="unbalanced"):
         np.random.seed(1234)
@@ -259,8 +346,8 @@ class AraTweet:
             sizes=l=[len(review_ids_pos),len(review_ids_neg),len(review_ids_neutral),len(review_ids_obj)]
             min_size = min(sizes)
 
-            ntest = np.floor(min_size * percent_test)
-            nvalid = np.floor(min_size * percent_valid)
+            ntest = int(np.floor(min_size * percent_test))
+            nvalid = int(np.floor(min_size * percent_valid))
 
             test_ids = np.concatenate([review_ids_pos[0:ntest] \
                        ,review_ids_neg[0:ntest]\
@@ -339,7 +426,8 @@ class AraTweet:
 
         (body,rating) = self.read_clean_reviews()
         rating = np.array(rating)
-        body = pd.Series(body)
+        body = np.array(body)
+        # body = pd.Series(body)
         train_file = (self.REVIEWS_PATH + klass + "class-" +
             balanced + "-train.txt")
         test_file = (self.REVIEWS_PATH + klass + "class-" +
@@ -365,7 +453,9 @@ class AraTweet:
 
 AraSent=AraTweet()
 (body,rating)=AraSent.read_clean_reviews()
-AraSent.split_train_validation_test(rating,0.2, 0.2,"unbalanced")
+
+AraSent.split_train_validation_test_no_obj(rating,0.2, 0.2,"unbalanced")
+AraSent.split_train_validation_test_no_obj(rating,0.2, 0.2,"balanced")
 
 # print AraSent.split_train_validation_test(rating,0.2, 0.2,"unbalanced")
 
