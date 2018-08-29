@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sun Mar 10 16:27:03 2015
-"""
+
 
 import nltk
 nltk.download('stopwords')

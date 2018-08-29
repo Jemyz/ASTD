@@ -1,10 +1,4 @@
-"""
-Created on Sun Apr 14 19:05:12 2013
 
-@author1: Mohamed Aly <mohamed@mohamedaly.info>
-@author2: Mahmoud Nabil <mah.nabil@yahoo.com>
-
-"""
 
 import numpy as np
 from symbol import return_stmt

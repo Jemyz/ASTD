@@ -55,8 +55,7 @@ stopwords_list = stopwords.words('arabic')
 
 
 
-# print(stopwords_list[20])
-# exit()
+
 
 LoadValidation = True  # Load The validation set
 Evaluate_On_TestSet = True  # Evaluate either on evaluation or on test set if LoadValidation is True

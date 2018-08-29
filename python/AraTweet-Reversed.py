@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sun Mar 10 16:27:03 2015
-"""
+
+
+
 
 import nltk
 nltk.download('stopwords')
@@ -65,7 +65,7 @@ class AraTweetReversed:
     def read_clean_reviews(self):
         return self.read_review_file(self.REVIEWS_PATH +
                                      self.CLEAN_REVIEWS_FILE)
-
+    # Create format and write csvs that is needed for training
     def reverse_dataset(self,body,rating,vocab):
         print
         labels = []
@@ -100,9 +100,6 @@ class AraTweetReversed:
                 writer.writerow(item)
 
 
-
-
-
 AraSent=AraTweetReversed()
 (body, rating, vocab)=AraSent.read_clean_reviews()
 
@@ -113,8 +110,3 @@ print "writing"
 AraSent.write_list_csv(reversed_reviews,"reversed_reviews.csv")
 AraSent.write_dict_csv(reversed_vocab,"reversed_vocab.csv")
 AraSent.write_list_csv(labels,"labels.csv")
-
-# AraSent.split_train_validation_test_no_obj(rating,0.2, 0.2,"unbalanced")
-# AraSent.split_train_validation_test_no_obj(rating,0.2, 0.2,"balanced")
-# print AraSent.split_train_validation_test(rating,0.2, 0.2,"unbalanced")
-
