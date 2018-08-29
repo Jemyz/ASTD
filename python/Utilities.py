@@ -69,6 +69,8 @@ def stackedbarplot(x_data, y_data_list, colors, y_data_names="", x_label="", y_l
     ax.set_xlabel(x_label)
     ax.set_title(title)
     ax.legend(loc = 'upper right')
+
+
     plt.show()
 
 
@@ -251,10 +253,26 @@ def stop_word_perc(d_train_ALL,y_train_ALL,stopwords_list):
         negtive_total_words) + "   " + str(negtive_stop_words * 1.0 / negtive_total_words)
 
 
-def groupedbarplot(labels,bars,types,colors,title,suptitle,total,barWidth = 0.5):
+
+def groupedbarplot(labels,bars,types,colors,title,suptitle,total):
+
+    """
+    :param labels: classifiers names ex: ['LRegn', 'PAgg', 'SVM', 'Percep', 'bnb', 'mnb', 'sgd', 'KNN']
+    :param bars: true positive for each class ex: [(282.0, 241.0, 251.0, 224.0, 332.0, 265.0, 254.0, 43.0), (23.0, 34.0, 31.0, 44.0, 1.0, 32.0, 37.0, 3.0), (76.0, 83.0, 78.0, 79.0, 6.0, 72.0, 79.0, 146.0)]
+    :param types: classification types ex: ['Negative', 'Neutral', 'Positive']
+    :param colors: colors of classification types ex: ['red', 'green', 'blue']
+    :param title: type of dataset ex: 4-unbalanced
+    :param suptitle: type of feature extraction ex: count_ng1
+    :param total: total number in each class ex: [336, 166, 159]
+
+    """
+
     # libraries
     import numpy as np
     import matplotlib.pyplot as plt
+
+    # bar width
+    barWidth = len(types) * 0.5 + 0.5
 
     # Set position of bar on X axis
     x_postions =  []
@@ -263,22 +281,35 @@ def groupedbarplot(labels,bars,types,colors,title,suptitle,total,barWidth = 0.5)
         x_postions.append([x + barWidth*i for x in r])
 
 
-    # Make the plot
+    ax = plt.subplot()
+    # Plot bars on Y axis
     for i in range(len(bars)):
         if(i < 3):
-            plt.bar(x_postions[i], bars[i], color=colors[i], width=barWidth, edgecolor='white', label=types[i]+": "+str(total[i]))
+            ax.bar(x_postions[i], bars[i], color=colors[i], width=barWidth, edgecolor='white', label=types[i]+": "+str(total[i]))
         else:
-            plt.bar(x_postions[i], bars[i], color=colors[i%3], width=barWidth, edgecolor='white')
+            ax.bar(x_postions[i], bars[i], color=colors[i%3], width=barWidth, edgecolor='white')
 
-    # Add xticks on the middle of the group bars
 
-    plt.xlabel('group', fontweight='bold')
-    plt.xticks(x_postions[len(x_postions)/2],labels)
+    # Add labels on the middle of the group bars
 
-    plt.title(title)
+    ax.set_xlabel('group', fontweight='bold')
+    ax.set_xticks(x_postions[len(x_postions)/2])
+    ax.set_xticklabels(labels)
+
+    ax.set_title(title)
     plt.suptitle(suptitle)
 
     # Create legend & Show graphic
     plt.legend()
+
+    # Add numbers on the top of bars
+    rects = ax.patches
+    labels = list(np.array((bars)).ravel())
+    labels = [int(x) for x in labels]
+
+    for rect, label in zip(rects, labels):
+        height = rect.get_height()
+        plt.text(rect.get_x() + rect.get_width() / 2, height + 3, label,
+                ha='center', va='bottom')
 
     plt.show()
