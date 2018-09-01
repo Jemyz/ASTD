@@ -248,7 +248,7 @@ def stop_word_perc(d_train_ALL,y_train_ALL,stopwords_list):
 
 
 
-def groupedbarplot(labels,bars,types,colors,title,suptitle,total):
+def groupedbarplot(labels,bars,types,colors,title,suptitle,total,barWidth = 0.5):
 
     """
     :param labels: classifiers names ex: ['LRegn', 'PAgg', 'SVM', 'Percep', 'bnb', 'mnb', 'sgd', 'KNN']
@@ -266,11 +266,11 @@ def groupedbarplot(labels,bars,types,colors,title,suptitle,total):
     import matplotlib.pyplot as plt
 
     # bar width
-    barWidth = len(types) * 0.5 + 0.5
+    print barWidth
 
     # Set position of bar on X axis
     x_postions =  []
-    r = np.arange(len(bars[0]))*2
+    r = np.arange(len(bars[0]))*(len(types) * barWidth + barWidth)
     for i in range(len(bars)):
         x_postions.append([x + barWidth*i for x in r])
 
