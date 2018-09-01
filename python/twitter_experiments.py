@@ -59,6 +59,7 @@ for data in datas:
     y_test_PN = np.array(y_test_ALL[indices_test])
 
 
+    # Convert to Numeric Labels
 
     y_train_PN[y_train_PN == 'POS'] = int(1)
     y_train_PN[y_train_PN == 'NEG'] = int(-1)
@@ -124,8 +125,11 @@ for data in datas:
                                      tacc=tacc)
 
                     scores.append(score)
+
+        # plotting all classifiers for a feature extraction technique
         groupedbarplot(clfs_names,zip(*classes_accuracies),TYPES,COLORS,data['name'],feat_generator['name'],TOTALS)
 ####################################Testing##############################################
+
 value_unbalanced = 0.0
 value_balanced = 0.0
 
@@ -159,6 +163,8 @@ print
 for k, v in temp_balanced.iteritems():
     print(k, v)
 
+
+# save the classifiers scores in csv file
 
 import pandas as pd
 df = pd.DataFrame(scores)  # transpose to look just like the sheet above

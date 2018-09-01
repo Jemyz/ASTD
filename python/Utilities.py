@@ -265,9 +265,6 @@ def groupedbarplot(labels,bars,types,colors,title,suptitle,total,barWidth = 0.5)
     import numpy as np
     import matplotlib.pyplot as plt
 
-    # bar width
-    print barWidth
-
     # Set position of bar on X axis
     x_postions =  []
     r = np.arange(len(bars[0]))*(len(types) * barWidth + barWidth)
